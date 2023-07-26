@@ -3,15 +3,13 @@ const fs = require('fs')
 const id = 0
 let products = []
 let productsFiltered = []
-
+let path = "./node/claseConstructor/products/data.json" //ruta de archivo JSON para ser usado como variable
 
 module.exports = class Product {
-    constructor (file, title, description, price, thumbnail, code, stock, id ) {
-        this.file = file
+    constructor (title, description, price, code, stock, id ) {
         this.title = title
         this.description = description
         this.price = price
-        this.thumbnail = thumbnail
         this.code = code
         this.stock = stock
         this.id = products.length + 1
@@ -36,14 +34,15 @@ module.exports = class Product {
     //To distribute current objects to class methods *will NOT print in console*. Will also parse JSON  
     async findProducts() {
         try {
-            const getArr = await fs.promises.readFile(this.file, "utf-8");
+            const getArr = await fs.promises.readFile(path, "utf-8");
             //console.log(getArr)
             return JSON.parse(getArr); //Parse objects
         } catch (error) {
             console.error(error);
             return [];
         }
-    }
+    } 
+
     //Method to print current objects in console
     async getProducts() {
         try {
@@ -53,59 +52,57 @@ module.exports = class Product {
             console.error(error);
             return [];
         }
-    }
+    } 
 
-   async addProduct(title, description, price, thumbnail, code, stock) {
-    let product = new Product(title, description, price, thumbnail, code, stock, id)
-    const newProduct = {
-        title: product.title ?? "No title",
-        description: product.description ?? "No description",
-        price: product.price ?? "No price",
-        code: product.code ?? "No code"
-    }
-    const products = await this.findProducts()
-    products.push(newProduct)
+   async addProduct(title, description, price, code, stock) {
+    let product = new Product(title, description, price, code, stock)
         try {
-            await fs.promises.writeFile(this.archivo, JSON.stringify(product, null, "\t"))
-            console.log("Usuario creado correctamente!")
-            /*products = JSON.parse(getProduct)
-            let idFinder = products.find( e => e.code == product.code )
-            //valida si el codigo existe previamente
-            if(idFinder){ 
-                console.log("Codigo ya existente, intente de nuevo")
+            const products = await this.findProducts()
+            product.id = products.length + 1
+            productsFiltered = products.find(p => {
+                return p.code == code
+            })
+            //Validacion si Code NO existe
+            if(!productsFiltered) {
+                console.log("Producto a agregar", product)
+                products.push(product)
+                await fs.promises.writeFile(path, JSON.stringify(products, null, "\t"))
+                console.log("Producto creado correctamente!")
                 return
-            } */
-            //await fs.promises.writeFile(`./products/data.json`, JSON.stringify(this.title, null, "\t"))     
+            }
+            console.log("Codigo ya existe, intente de nuevo!")
+            return    
         } catch (err) {
             console.error(err)
             return []
         }
    }
-
-    async updateProduct(title, description, price, thumbnail, code, stock) {
-        let product = new Product(title, description, price, thumbnail, code, stock)
+    //Actualizacion de producto, busqueda por Code
+    async updateProduct(title, description, price, code, stock) {
+        let product = new Product(title, description, price, code, stock)
         try {
             const products = await this.findProducts()
             //Encuentra ID para mostrar en consola producto eliminado
             productsFiltered = products.find(p => {
                 return p.code === code
             })
-            //product.id = productsFiltered.id
+            product.id = productsFiltered.id
+            console.log(`Old:`, productsFiltered)
             console.log(`Updated:`, product)
             
-            //Encuentra productos que no tienen mismo ID, esos se imprimiran, eliminando el primer objeto
+            //Encuentra productos que no tienen mismo Code, esos se imprimiran, actualizando el producto
             let newArr = products.filter(p => {
                 return p.code !== code
             })
             newArr.push(product)
-            await fs.promises.writeFile(this.file, JSON.stringify(newArr))
+            await fs.promises.writeFile(path, JSON.stringify(newArr, null, "\t"))
             
         } catch (err) {
             console.error(err)
             return []
         }  
     } 
-
+    //Encuentra producto por ID
     async getProductById(id) {
         try {
             const products = await this.findProducts()
@@ -119,7 +116,7 @@ module.exports = class Product {
             return []
         }  
     } 
-
+    //Elminia producto por ID
     async deleteProductById(id) {
         try {
             const products = await this.findProducts()
@@ -132,15 +129,20 @@ module.exports = class Product {
             productsFiltered = products.filter(p => {
                 return p.id !== id
             })
-            await fs.promises.writeFile(this.file, JSON.stringify(productsFiltered))
+            await fs.promises.writeFile(path, JSON.stringify(productsFiltered, null, "\t"))
              
         } catch (err) {
             console.error(err)
             return []
         }  
-    } 
+    }
+    //Encuentra todos los productos
+    async deleteAll() {
+        const products = await this.findProducts()
+        console.log("Products Deleted:", products)
+        const newArr = []
+        await fs.promises.writeFile(path, JSON.stringify(newArr, null, "\t"))
+
+    }
  }
 
-
- 
- // data.createFolder()
